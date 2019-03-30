@@ -21,7 +21,9 @@ public class RemoteFetch {
         try {
             URL url = new URL(OPEN_WEATHER_MAP_API + "lat=" + lat + "&lon=" + longitude + "&units=metric");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.addRequestProperty("x-api-key", "f6c3380188904170596692a6172550e9");
+
+//            connection.addRequestProperty("x-api-key", "f6c3380188904170596692a6172550e9");
+            connection.addRequestProperty("x-api-key", context.getResources().getString(R.string.open_weather_maps_app_id));
             BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             StringBuilder json = new StringBuilder(1024);
             String tmp;
@@ -45,7 +47,8 @@ public class RemoteFetch {
         try {
             URL url = new URL(OPEN_WEATHER_MAP_API_SEVEN_DAY + "lat=" + lat + "&lon=" + longitude + "&cnt=6&mode=json" + "&units=metric");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.addRequestProperty("x-api-key", "f6c3380188904170596692a6172550e9");
+            connection.addRequestProperty("x-api-key", context.getResources().getString(R.string.open_weather_maps_app_id));
+//            connection.addRequestProperty("x-api-key", "f6c3380188904170596692a6172550e9");
             BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             StringBuilder json = new StringBuilder(1024);
             String tmp;

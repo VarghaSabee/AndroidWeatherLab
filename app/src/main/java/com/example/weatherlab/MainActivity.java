@@ -2,6 +2,7 @@ package com.example.weatherlab;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.location.Location;
@@ -11,9 +12,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -28,13 +29,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
 
-    private TextView mTemp, mHumidity, mTempHigh, mTempLow, mName, mWeather, mWeatherIcon;
+    private TextView mTemp, mHumidity, mTempHigh, mTempLow, mName, mWeather, mWeatherIcon, mUpdatedAt;
     private ListView mListViewForecast;
     private List<Forecast> arrayListForecast;
     private Handler handler;
@@ -54,21 +56,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         Typeface robotoThin = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Thin.ttf");
         Typeface robotoLight = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Light.ttf");
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("Simple Weather");
-        toolbar.inflateMenu(R.menu.menu_main);
-        toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                if (item.getItemId() == R.id.action_refresh) {
-
-                      //locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, tenMin, oneMile, MainActivity.this);
-                    updateWeather(48.5464 + "", 22.245 + "");
-
-                }
-                return false;
-            }
-        });
+//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+//        toolbar.setTitle("Simple Weather");
+//        toolbar.inflateMenu(R.menu.menu_main);
+//        toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+//            @Override
+//            public boolean onMenuItemClick(MenuItem item) {
+//                if (item.getItemId() == R.id.action_refresh) {
+//                    requestDataAndPermissions();
+//                }
+//                return false;
+//            }
+//        });
 
         mListViewForecast = (ListView) findViewById(R.id.listView);
         mListViewForecast.setEnabled(false);
@@ -79,6 +78,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         mName = (TextView) findViewById(R.id.name);
         mWeather = (TextView) findViewById(R.id.weather);
         mWeatherIcon = (TextView) findViewById(R.id.weatherIcon);
+        mUpdatedAt = (TextView) findViewById(R.id.updated_at);
 
         mWeatherIcon.setTypeface(weatherFont);
         mTemp.setTypeface(robotoThin);
@@ -89,8 +89,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         arrayListForecast = new ArrayList<>();
 
         /*Main*/
-
-
     }
 
 
@@ -103,17 +101,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     @Override
     public void onResume() {
         super.onResume();
-
-      //      locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, tenMin, oneMile, this);
-
+        requestDataAndPermissions();
     }
 
     private void updateWeather(final String lat, final String lon) {
         new Thread() {
             public void run() {
-
-                final JSONObject jsonCurrent = RemoteFetch.getTodayForecast(MainActivity.this, ""+43, ""+22);
-                final JSONObject jsonForecast = RemoteFetch.getFiveDayForecast(MainActivity.this, ""+43, ""+22);
+                final JSONObject jsonCurrent = RemoteFetch.getTodayForecast(MainActivity.this, lat, lon);
+                final JSONObject jsonForecast = RemoteFetch.getFiveDayForecast(MainActivity.this, lat, lon);
                 if (jsonCurrent == null && jsonForecast == null) {
                     handler.post(new Runnable() {
                         public void run() {
@@ -125,6 +120,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         public void run() {
                             renderCurrentWeather(jsonCurrent);
                             renderForecastWeather(jsonForecast);
+
+                            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd HH:mm:ss");
+                            String currentDateandTime = sdf.format(new Date());
+                            mUpdatedAt.setText(getResources().getString(R.string.updated_at) + currentDateandTime);
+
                         }
                     });
                 }
@@ -155,7 +155,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             for (int i = 0; i < 6; i++) {
                 JSONObject listItem = list.getJSONObject(i);
                 JSONObject mainItem = listItem.getJSONObject("main");
-//                JSONObject temp = listItem.getDouble("temp");
                 JSONObject weather = listItem.getJSONArray("weather").getJSONObject(0);
                 Forecast forecast = new Forecast();
                 forecast.setHighTemp(String.valueOf(mainItem.getDouble("temp_max")));
@@ -169,6 +168,29 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             SetListViewHeight.setListViewHeight(mListViewForecast);
         } catch (JSONException e) {
             Log.e("FORECAST_JSON_ERROR", e.toString());
+        }
+    }
+
+    private void requestDataAndPermissions() {
+        try {
+            if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+                if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
+                        Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.INTERNET}, 1);
+                } else {
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.INTERNET}, 1);
+                }
+            }
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, tenMin, oneMile, MainActivity.this);
+        } catch (Exception e) {
+            moveTaskToBack(true);
+            finish();
+            Toast.makeText(MainActivity.this, "Permissions needed", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -208,10 +230,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_main, menu);
+        return true;
+    }
 
-        //updateWeather(location.getLatitude() + "", location.getLongitude() + "");
-        updateWeather(48 + "", 23 + "");
+    @Override
+    public void onLocationChanged(Location location) {
+        updateWeather(location.getLatitude() + "", location.getLongitude() + "");
+//        updateWeather(48 + "", 23 + "");
     }
 
     /**
@@ -230,6 +258,27 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     @Override
     public void onProviderDisabled(String provider) {
 
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.action_refresh:
+                requestDataAndPermissions();
+                break;
+            case R.id.action_about:
+//                Intent about_intent = new Intent(getApplicationContext(), AboutActivity.class);
+//                startActivity(about_intent);
+                break;
+            case R.id.action_home:
+                break;
+            case R.id.action_exit:
+                moveTaskToBack(true);
+                finish();
+                break;
+        }
+        return true;
     }
 
 

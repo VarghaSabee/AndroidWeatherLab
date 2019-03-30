@@ -13,8 +13,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FF9800"
-        android:minHeight="56dp"
-        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"/>
+        android:minHeight="0dp"
+        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <ScrollView
         android:layout_width="match_parent"
